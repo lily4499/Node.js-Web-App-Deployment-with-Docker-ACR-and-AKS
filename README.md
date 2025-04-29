@@ -33,7 +33,7 @@ You’re a DevOps engineer at a startup. Developers build a basic Node.js app an
 
 ## 📁 Project Structure
 
-```
+```plaintext
 nodejs-webapp/
 ├── public/
 │   ├── index.html
