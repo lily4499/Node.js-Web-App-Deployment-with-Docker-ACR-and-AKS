@@ -1,9 +1,9 @@
-# Node.js-Web-App-Deployment-with-Docker-ACR-and-AKS
+#  Node.js Web App Deployment with Docker, ACR, and AKS
 
 ---
 
 ```markdown
-# 🚀 Node.js Web App Deployment with Docker, ACR, and AKS
+
 
 This project demonstrates how to build a Node.js web application, dockerize it, push the image to **Azure Container Registry (ACR)**, and deploy it to **Azure Kubernetes Service (AKS)**.
 
