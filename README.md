@@ -242,6 +242,53 @@ docker build -t lily4499/nodejswebapp:latest .
 az login
 ```
 
+## Or use Azure Service Principal (SP) Interacts with ACR and AKS
+A Service Principal (SP) is an identity used to authenticate and authorize applications or automation scripts to access Azure resources like:
+🧱 Azure Container Registry (ACR) — to push/pull container images
+☸️ Azure Kubernetes Service (AKS) — to manage or deploy apps via kubectl
+
+a - Create Azure Service Principal
+📄 azure/create-sp.sh
+```bash
+#!/bin/bash
+
+SP_NAME="acr-aks-sp"
+ACR_NAME="liliacr"
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+
+az ad sp create-for-rbac \
+  --name $SP_NAME \
+  --role="Contributor" \
+  --scopes="/subscriptions/$SUBSCRIPTION_ID" \
+  --sdk-auth > sp-credentials.json
+
+echo "✅ Service Principal created. Credentials saved in sp-credentials.json"
+
+```
+💡 This sp-credentials.json can be used for CI/CD secrets.
+
+
+b - Set Environment Variables Using SP
+📄 azure/set-env.sh
+```bash
+#!/bin/bash
+
+# Load credentials
+export AZURE_CLIENT_ID="<your-sp-client-id>"
+export AZURE_CLIENT_SECRET="<your-sp-client-secret>"
+export AZURE_TENANT_ID="<your-tenant-id>"
+export AZURE_SUBSCRIPTION_ID="<your-subscription-id>"
+
+# Login using Service Principal
+az login --service-principal \
+  --username "$AZURE_CLIENT_ID" \
+  --password "$AZURE_CLIENT_SECRET" \
+  --tenant "$AZURE_TENANT_ID"
+
+az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+
+```
+
 #### 🏗️ Create Resource Group and ACR
 
 ```bash
@@ -251,8 +298,16 @@ az acr login --name liliacr
 ```
 
 #### 🔖 Tag & Push Image
+When using a Service Principal to push or pull images from ACR:
+🛠️ Required Role: AcrPush or Contributor
+✅ You must assign the Service Principal a role that allows access to the ACR.
 
 ```bash
+az role assignment create \
+  --assignee <SP_CLIENT_ID> \
+  --scope $(az acr show --name liliacr --query id -o tsv) \
+  --role AcrPush
+
 docker tag lily4499/nodejswebapp:latest liliacr.azurecr.io/nodejswebapp:v1
 docker push liliacr.azurecr.io/nodejswebapp:v1
 ```
@@ -267,6 +322,9 @@ az acr repository show-tags --name liliacr --repository nodejswebapp --output ta
 ---
 
 ### ✅ 8. Create AKS Cluster
+When using the SP to authenticate to Azure and deploy to AKS with kubectl:
+🛠️ Required Role: Contributor on AKS resource group
+✅ This lets the SP fetch AKS credentials and interact with the cluster.
 
 ```bash
 az group create --name lili-Group --location eastus
